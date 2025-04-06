@@ -22,14 +22,14 @@ A Python-based tool to fetch DNS records (IP address, Name Servers) with a web i
 ### Option 1: Local Python Installation
 ```bash
 git clone https://github.com/Erfanm83/DNS-Lookup-Tool.git
-cd Dns-Lookup-Tool
+cd DNS-Lookup-Tool
 pip install -r requirements.txt
 ```
 
 ### Option 2: Docker Installation
 ```bash
-git clone https://github.com/yourusername/Dns-Lookup-Tool.git
-cd Dns-Lookup-Tool
+git clone https://github.com/Erfanm83/DNS-Lookup-Tool.git
+cd DNS-Lookup-Tool
 ```
 
 ## Usage 🚀
