@@ -21,7 +21,7 @@ A Python-based tool to fetch DNS records (IP address, Name Servers) with a web i
 
 ### Option 1: Local Python Installation
 ```bash
-git clone https://github.com/yourusername/DNS-Lookup-Tool.git
+git clone https://github.com/Erfanm83/DNS-Lookup-Tool.git
 cd Dns-Lookup-Tool
 pip install -r requirements.txt
 ```
