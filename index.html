@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNS lookup</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <style>
+        body {
+            font-family: 'Peyda', sans-serif;
+            background-color: #fff;
+            color: #7a7b85;
+        }
+        
+        .search-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+        }
+        
+        .call-to-action-01__input-group {
+            border: 1px solid #e4e5e7;
+            border-radius: .5rem;
+            padding: .5rem 0 .5rem .5rem;
+            background-color: #fff;
+        }
+        
+        .btn-primary {
+            background-color: #2635d9;
+            border-color: #2635d9;
+        }
+        
+        .result-card {
+            border-radius: .75rem;
+            border: 1px solid #e4e5e7;
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            display: none;
+            direction: ltr; /* Force LTR for results */
+            text-align: left; /* Align text to left */
+        }
+        
+        .result-item {
+            padding: .75rem 0;
+            border-bottom: 1px dashed #e4e5e7;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .badge-cloudflare {
+            background-color: #f48120;
+        }
+        
+        .result-label {
+            font-weight: bold;
+            margin-left: 1rem; /* Space between label and value */
+        }
+        
+        @media (max-width: 768px) {
+            .search-container {
+                margin: 1rem;
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="search-container">
+            <h2 class="text-center mb-4">DNS information lookup</h2>
+            <div class="call-to-action-01__input-group input-group">
+                <input type="text" class="form-control" id="domainInput" placeholder="Enter Domain Name (example.com)">
+                <button class="btn btn-primary" id="searchBtn" type="button">
+                    <span class="d-none d-md-inline">Search</span>
+                    <span class="d-md-none icon icon-search">🔍</span>
+                </button>
+            </div>
+            
+            <div id="loadingSpinner" class="text-center mt-3" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Receiving Information...</p>
+            </div>
+            
+            <div id="resultCard" class="result-card">
+                <h4 id="domainTitle" class="text-center mb-3"></h4>
+                
+                <div class="result-item">
+                    <span class="result-label">IP Address:</span>
+                    <span id="ipAddress"></span>
+                </div>
+                
+                <div class="result-item" style="display: block;">
+                    <span class="result-label">Name Servers (NS):</span>
+                    <ul id="nameServers" class="list-unstyled mt-2" style="text-align: left; padding-left: 1rem;"></ul>
+                </div>
+                
+                <div class="result-item">
+                    <span class="result-label">Cloudflare Name Servers:</span>
+                    <span id="cloudflareStatus"></span>
+                </div>
+            </div>
+            
+            <div id="errorAlert" class="alert alert-danger mt-3" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('searchBtn').addEventListener('click', searchDNS);
+        document.getElementById('domainInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchDNS();
+        });
+
+        async function searchDNS() {
+            const domain = document.getElementById('domainInput').value.trim();
+            if (!domain) {
+                showError('Please enter a domain name');
+                return;
+            }
+
+            // Reset UI
+            document.getElementById('resultCard').style.display = 'none';
+            document.getElementById('errorAlert').style.display = 'none';
+            document.getElementById('loadingSpinner').style.display = 'block';
+
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/dns-lookup?domain=${encodeURIComponent(domain)}`);
+                
+                if (!response.ok) {
+                    throw new Error('Error retrieving information');
+                }
+                
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                showError(error.message || 'Error communicating with the server');
+            } finally {
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            const resultCard = document.getElementById('resultCard');
+            const domainTitle = document.getElementById('domainTitle');
+            const ipAddress = document.getElementById('ipAddress');
+            const nameServers = document.getElementById('nameServers');
+            const cloudflareStatus = document.getElementById('cloudflareStatus');
+            
+            // Set domain title
+            domainTitle.textContent = `Results for: ${data.domain}`;
+            
+            // Set IP address
+            ipAddress.textContent = data.ipAddress || 'Not found';
+            
+            // Set name servers
+            nameServers.innerHTML = '';
+            if (Array.isArray(data.nameServers)) {
+                data.nameServers.forEach(ns => {
+                    const li = document.createElement('li');
+                    li.textContent = ns;
+                    li.style.textAlign = 'left'; // Ensure left alignment
+                    nameServers.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = data.nameServers || 'Not found';
+                li.style.textAlign = 'left';
+                nameServers.appendChild(li);
+            }
+            
+            // Set Cloudflare status
+            if (data.cloudflareNameServers) {
+                cloudflareStatus.innerHTML = '<span class="badge badge-cloudflare">YES</span>';
+            } else {
+                cloudflareStatus.textContent = 'NO';
+            }
+            
+            // Show results
+            resultCard.style.display = 'block';
+        }
+
+        function showError(message) {
+            const errorAlert = document.getElementById('errorAlert');
+            errorAlert.textContent = message;
+            errorAlert.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
